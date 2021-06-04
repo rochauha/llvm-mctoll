@@ -827,6 +827,32 @@ ModuleRaiser *getModuleRaiser(const TargetMachine *tm) {
 
 } // namespace RaiserContext
 
+// Replace symbolic branch target with immediate address.
+// example : br BB2 to br 0x43
+void trySimplifyBranchTargetSymbol(MCInst &Inst, const MCInstrAnalysis *MIA,
+                                   const SectionSymbolsTy &Symbols) {
+  assert(MIA->isBranch(Inst) && "Instruction must be a branch");
+
+  if (!Inst.begin()->isBareSymbolRef())
+    return;
+
+  auto SymRefExpr = cast<MCSymbolRefExpr>(Inst.begin()->getExpr());
+  StringRef BBLabel = SymRefExpr->getSymbol().getName();
+
+  MCOperand targetAddressOperand; // Initialized to invalid by default
+  // Look up the symbol and take the corresponding address
+  for (auto &Symbol : Symbols) {
+    if (BBLabel == Symbol.Name) {
+      targetAddressOperand =
+          MCOperand::createImm(Symbol.Addr); // now valid immediate operand
+      break;
+    }
+  }
+
+  if (targetAddressOperand.isImm())
+    *Inst.begin() = targetAddressOperand;
+}
+
 static void DisassembleObject(const ObjectFile *Obj, bool InlineRelocs) {
   if (StartAddress > StopAddress)
     error("Start address should be less than stop address");
@@ -1370,11 +1396,15 @@ static void DisassembleObject(const ObjectFile *Obj, bool InlineRelocs) {
         // successfully till now. Else, do not bother adding since no attempt
         // will be made to raise this function.
         if (Disassembled) {
-          mcInstRaiser->addMCInstOrData(Index, Inst);
+          // Instead of adding here, we add after the branch check as we might
+          // need to simplify the basic block symbol to it's immediate address.
 
           // Find branch target and record it. Call targets are not
           // recorded as they are not needed to build per-function CFG.
           if (MIA && MIA->isBranch(Inst)) {
+            // If we have a symbol target, we first resolve the symbol to the
+            // corresponding address.
+            trySimplifyBranchTargetSymbol(Inst, MIA.get(), Symbols);
             uint64_t Target;
             if (MIA->evaluateBranch(Inst, Index, Size, Target)) {
               // In a relocatable object, the target's section must reside in
@@ -1405,6 +1435,9 @@ static void DisassembleObject(const ObjectFile *Obj, bool InlineRelocs) {
             uint64_t fallThruIndex = Index + Size;
             branchTargetSet.insert(fallThruIndex);
           }
+
+          // Finally, add inst to the raiser instance.
+          mcInstRaiser->addMCInstOrData(Index, Inst);
         }
       }
       FuncFilter->eraseFunctionBySymbol(Symbols[si].Name,
