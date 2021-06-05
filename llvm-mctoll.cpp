@@ -125,6 +125,10 @@ cl::opt<bool> llvm::Disassemble("raise", cl::desc("Raise machine instruction"),
 cl::alias Disassembled("d", cl::desc("Alias for -raise"),
                        cl::aliasopt(Disassemble), cl::cat(LLVMMCToLLCategory),
                        cl::NotHidden);
+static cl::opt<bool> DumpMachineFunctions(
+    "dump-machine-functions",
+    cl::desc("Dump transliterated MachineInstrs for all functions and exit."),
+    cl::cat(LLVMMCToLLCategory), cl::NotHidden);
 
 static cl::opt<bool>
     MachOOpt("macho", cl::desc("Use MachO specific object file parser"));
@@ -1454,13 +1458,25 @@ static void DisassembleObject(const ObjectFile *Obj, bool InlineRelocs) {
     for (auto target : branchTargetSet)
       curMFRaiser->getMCInstRaiser()->addTarget(target);
 
-    moduleRaiser->runMachineFunctionPasses();
+    if (!DumpMachineFunctions)
+      moduleRaiser->runMachineFunctionPasses();
 
     if (!FuncFilter->isFilterSetEmpty(FunctionFilter::FILTER_INCLUDE)) {
       errs() << "***** WARNING: The following include filter symbol(s) are not "
                 "found :\n";
       FuncFilter->dump(FunctionFilter::FILTER_INCLUDE);
     }
+  }
+
+  if (DumpMachineFunctions) {
+    auto &machineFunctionRaisers =
+        moduleRaiser->getMachineFunctionRaiserVector();
+    for (MachineFunctionRaiser *mfr : machineFunctionRaisers) {
+      MachineFunction &MF = mfr->getMachineFunction();
+      mfr->getMCInstRaiser()->buildCFG(MF, MIA.get(), MII.get());
+      MF.dump();
+    }
+    return;
   }
 
   // Add the pass manager

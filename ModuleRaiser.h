@@ -76,6 +76,10 @@ public:
   CreateAndAddMachineFunctionRaiser(Function *F, const ModuleRaiser *,
                                     uint64_t Start, uint64_t End) = 0;
 
+  std::vector<MachineFunctionRaiser *> &getMachineFunctionRaiserVector() {
+    return mfRaiserVector;
+  }
+
   MachineFunctionRaiser *getCurrentMachineFunctionRaiser() {
     if (mfRaiserVector.size() > 0)
       return mfRaiserVector.back();
