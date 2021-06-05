@@ -833,6 +833,9 @@ void trySimplifyBranchTargetSymbol(MCInst &Inst, const MCInstrAnalysis *MIA,
                                    const SectionSymbolsTy &Symbols) {
   assert(MIA->isBranch(Inst) && "Instruction must be a branch");
 
+  if (!Inst.begin()->isExpr())
+    return;
+
   if (!Inst.begin()->isBareSymbolRef())
     return;
 
