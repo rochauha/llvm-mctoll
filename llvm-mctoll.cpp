@@ -84,6 +84,8 @@
 #include <utility>
 #include <vector>
 
+#include "PostprocessMF.h"
+
 using namespace llvm;
 using namespace object;
 
@@ -1474,6 +1476,7 @@ static void DisassembleObject(const ObjectFile *Obj, bool InlineRelocs) {
     for (MachineFunctionRaiser *mfr : machineFunctionRaisers) {
       MachineFunction &MF = mfr->getMachineFunction();
       mfr->getMCInstRaiser()->buildCFG(MF, MIA.get(), MII.get());
+      postprocess(mfr);
       MF.dump();
     }
     return;
