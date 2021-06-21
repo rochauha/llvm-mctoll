@@ -1471,14 +1471,19 @@ static void DisassembleObject(const ObjectFile *Obj, bool InlineRelocs) {
   }
 
   if (DumpMachineFunctions) {
+    llvm::outs() << "---\n";
     auto &machineFunctionRaisers =
         moduleRaiser->getMachineFunctionRaiserVector();
     for (MachineFunctionRaiser *mfr : machineFunctionRaisers) {
       MachineFunction &MF = mfr->getMachineFunction();
       mfr->getMCInstRaiser()->buildCFG(MF, MIA.get(), MII.get());
       postprocess(mfr);
-      MF.dump();
+      llvm::outs() << "name: " << MF.getName() << '\n';
+      llvm::outs() << "body: |\n";
+      MF.print(llvm::outs());
+      llvm::outs().flush();
     }
+    llvm::outs() << "...\n";
     return;
   }
 

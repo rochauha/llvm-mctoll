@@ -10,4 +10,6 @@ void postprocessBranches(MachineFunctionRaiser *MFR);
 bool raiseBranchTargetAddress(MachineInstr &MI, MachineFunction &MF,
                               MCInstRaiser *mcInstRaiser);
 
+void removeMetadataOperands(MachineFunctionRaiser *MFR);
+
 #endif
