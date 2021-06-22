@@ -17,7 +17,7 @@ void removeMetadataOperands(MachineFunctionRaiser *MFR) {
       while (i < MI.getNumOperands()) {
         if (MI.getOperand(i).isMetadata()) {
           MI.RemoveOperand(i);
-          i = -1;
+          i = i - 1;
         }
         ++i;
       }

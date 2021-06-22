@@ -1605,6 +1605,7 @@ static void DumpInput(StringRef file) {
         DumpObject(o);
       else {
         errs() << "Raising x64 relocatable (.o) x64 binaries not supported\n";
+        DumpObject(o);
         exit(1);
       }
     } else if (o->getArch() == Triple::arm || o->getArch() == Triple::amdgcn)

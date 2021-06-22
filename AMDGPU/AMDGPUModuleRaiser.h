@@ -23,7 +23,6 @@ class AMDGPUModuleRaiser : public ModuleRaiser {
 public:
   AMDGPUModuleRaiser() : ModuleRaiser() {
     Arch = Triple::amdgcn;
-    llvm::outs() << "Created AMDGPUModuleRaiser\n";
   }
 
   MachineFunctionRaiser *
